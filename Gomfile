@@ -1,0 +1,2 @@
+gom 'github.com/bgentry/que-go'
+gom 'github.com/jackc/pgx'
