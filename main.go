@@ -2,12 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/bgentry/que-go"
-	"github.com/jackc/pgx"
 )
 
 type printNameArgs struct {
@@ -15,62 +13,62 @@ type printNameArgs struct {
 }
 
 func main() {
-	log.Println("start que example")
-	printName := func(j *que.Job) error {
-		var args printNameArgs
-		if err := json.Unmarshal(j.Args, &args); err != nil {
-			return err
-		}
-		fmt.Printf("Hello %s!\n", args.Name)
-		return nil
-	}
-
-	pgxcfg, err := pgx.ParseURI("postgresql://localhost/pgtest")
+	qc, err := NewQueClient("postgresql://localhost/quetest")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pgxpool, err := pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig:   pgxcfg,
-		AfterConnect: que.PrepareStatements,
-	})
-	defer pgxpool.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	qc := que.NewClient(pgxpool)
 	wm := que.WorkMap{
-		"PrintName": printName,
+		"PrintName":          PrintNameJob,
+		"SelectItem":         SelectItem,
+		"UpdateItem":         UpdateItem,
+		"UpdateMultipleItem": UpdateMultipleItem,
 	}
+	log.Println("create worker pool")
 	workers := que.NewWorkerPool(qc, wm, 2)
-	log.Println("start workers")
+	workers.Interval = 2 * time.Second
 	go workers.Start()
 
 	args, err := json.Marshal(printNameArgs{Name: "achiku"})
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	j := &que.Job{
 		Type: "PrintName",
 		Args: args,
 	}
+
 	log.Println("enqueue the first PrintName job")
 	if err := qc.Enqueue(j); err != nil {
 		log.Fatal(err)
 	}
 
-	j = &que.Job{
-		Type:  "PrintName",
-		RunAt: time.Now().UTC().Add(30 * time.Second),
-		Args:  args,
+	sj := &que.Job{
+		Type:  "SelectItem",
+		RunAt: time.Now().UTC().Add(2 * time.Second),
 	}
-	log.Println("enqueue the delayed PrintName job")
-	if err := qc.Enqueue(j); err != nil {
+	if err := qc.Enqueue(sj); err != nil {
 		log.Fatal(err)
 	}
 
-	time.Sleep(35 * time.Second)
-	workers.Shutdown()
+	args, err = json.Marshal(UpdateItemArgs{ID: 1})
+	uj := &que.Job{
+		Type: "UpdateItem",
+		Args: args,
+	}
+	if err := qc.Enqueue(uj); err != nil {
+		log.Fatal(err)
+	}
+
+	args, err = json.Marshal(UpdateItemArgs{ID: 1})
+	muj := &que.Job{
+		Type: "UpdateMultipleItem",
+		Args: args,
+	}
+	if err := qc.Enqueue(muj); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("waiting for jobs to be completed")
+	time.Sleep(time.Second * 10)
+	log.Println("done")
 }
