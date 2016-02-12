@@ -82,11 +82,39 @@ func UpdateItem(j *que.Job) error {
 
 // UpdateMultipleItem update multiple items
 func UpdateMultipleItem(j *que.Job) error {
-	var args UpdateItemArgs
-	if err := json.Unmarshal(j.Args, &args); err != nil {
+	conn := j.Conn()
+	tx, err := conn.Begin()
+	if err != nil {
 		log.Println(err)
 		return err
 	}
-	log.Printf("%v", args)
+	defer tx.Rollback()
+
+	var args UpdateItemArgs
+	if err := json.Unmarshal(j.Args, &args); err != nil {
+		return err
+	}
+	log.Printf("args id => %d", args.ID)
+	res, err := tx.Exec(`
+	UPDATE item
+	SET updated_at = now()
+	WHERE id = $1
+	`, args.ID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("[item] rows affected: %d", res.RowsAffected())
+	res, err = tx.Exec(`
+	UPDATE item_attribute
+	SET updated_at = now()
+	WHERE item_id = $1
+	`, args.ID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("[item_attribute] rows affected: %d", res.RowsAffected())
+	tx.Commit()
 	return nil
 }
