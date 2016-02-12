@@ -22,6 +22,8 @@ func main() {
 		"SelectItem":         SelectItem,
 		"UpdateItem":         UpdateItem,
 		"UpdateMultipleItem": UpdateMultipleItem,
+		"IncrementItemPrice": IncrementItemPrice,
+		"HTTPGetRequestItem": HTTPGetRequestItem,
 	}
 	log.Println("create worker pool")
 	workers := que.NewWorkerPool(qc, wm, 2)
@@ -32,20 +34,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	j := &que.Job{
-		Type: "PrintName",
-		Args: args,
-	}
-
-	log.Println("enqueue the first PrintName job")
-	if err := qc.Enqueue(j); err != nil {
+	if err := qc.Enqueue(&que.Job{Type: "PrintName", Args: args}); err != nil {
 		log.Fatal(err)
 	}
 
-	sj := &que.Job{
-		Type:  "SelectItem",
-		RunAt: time.Now().UTC().Add(2 * time.Second),
-	}
+	sj := &que.Job{Type: "SelectItem", RunAt: time.Now().UTC().Add(2 * time.Second)}
 	if err := qc.Enqueue(sj); err != nil {
 		log.Fatal(err)
 	}
@@ -65,6 +58,16 @@ func main() {
 		Args: args,
 	}
 	if err := qc.Enqueue(muj); err != nil {
+		log.Fatal(err)
+	}
+
+	args, err = json.Marshal(UpdateItemArgs{ID: 1})
+	if err := qc.Enqueue(&que.Job{Type: "IncrementItemPrice", Args: args}); err != nil {
+		log.Fatal(err)
+	}
+
+	args, err = json.Marshal(UpdateItemArgs{ID: 2})
+	if err := qc.Enqueue(&que.Job{Type: "HTTPGetRequestItem", Args: args}); err != nil {
 		log.Fatal(err)
 	}
 
