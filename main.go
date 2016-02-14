@@ -24,9 +24,10 @@ func main() {
 		"UpdateMultipleItem": UpdateMultipleItem,
 		"IncrementItemPrice": IncrementItemPrice,
 		"HTTPGetRequestItem": HTTPGetRequestItem,
+		"FailingJob":         FailingJob,
 	}
 	log.Println("create worker pool")
-	workers := que.NewWorkerPool(qc, wm, 2)
+	workers := que.NewWorkerPool(qc, wm, 1)
 	workers.Interval = 2 * time.Second
 	go workers.Start()
 
@@ -68,6 +69,10 @@ func main() {
 
 	args, err = json.Marshal(UpdateItemArgs{ID: 2})
 	if err := qc.Enqueue(&que.Job{Type: "HTTPGetRequestItem", Args: args}); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := qc.Enqueue(&que.Job{Type: "FailingJob"}); err != nil {
 		log.Fatal(err)
 	}
 

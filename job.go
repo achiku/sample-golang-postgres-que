@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"time"
@@ -57,7 +58,6 @@ func SelectItem(j *que.Job) error {
 		LIMIT 1
 	`).Scan(&n, &name, &t)
 	if err != nil {
-		j.Done()
 		log.Println(err)
 		return err
 	}
@@ -218,5 +218,23 @@ func HTTPGetRequestItem(j *que.Job) error {
 	}
 	log.Printf("resp: %+v", result)
 
+	return nil
+}
+
+// FailingJob job with simple failure
+func FailingJob(j *que.Job) error {
+	conn := j.Conn()
+	var cnt int64
+	err := conn.QueryRow(`
+		SELECT count(*) FROM item
+	`).Scan(&cnt)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	if cnt != 2 {
+		return errors.New("count doesn't match")
+	}
+	log.Printf("[FailingJob] count: %d", cnt)
 	return nil
 }
