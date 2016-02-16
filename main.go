@@ -25,6 +25,7 @@ func main() {
 		"IncrementItemPrice": IncrementItemPrice,
 		"HTTPGetRequestItem": HTTPGetRequestItem,
 		"FailingJob":         FailingJob,
+		"DbrQueryBuilderJob": DbrQueryBuilderJob,
 	}
 	log.Println("create worker pool")
 	workers := que.NewWorkerPool(qc, wm, 1)
@@ -73,6 +74,10 @@ func main() {
 	}
 
 	if err := qc.Enqueue(&que.Job{Type: "FailingJob"}); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := qc.Enqueue(&que.Job{Type: "DbrQueryBuilderJob"}); err != nil {
 		log.Fatal(err)
 	}
 

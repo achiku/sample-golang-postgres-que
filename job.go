@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/bgentry/que-go"
+	"github.com/gocraft/dbr"
+	"github.com/gocraft/dbr/dialect"
 )
 
 // PrintNameArgs print name args
@@ -236,5 +238,28 @@ func FailingJob(j *que.Job) error {
 		return errors.New("count doesn't match")
 	}
 	log.Printf("[FailingJob] count: %d", cnt)
+	return nil
+}
+
+func toSQL(stmt *dbr.SelectStmt) (dbr.Buffer, error) {
+	buf := dbr.NewBuffer()
+	if err := stmt.Build(dialect.PostgreSQL, buf); err != nil {
+		log.Println(err)
+		return buf, err
+	}
+	return buf, nil
+}
+
+// DbrQueryBuilderJob using dbr as query builder
+func DbrQueryBuilderJob(j *que.Job) error {
+	stmt := dbr.Select("id", "name").
+		From("item").
+		OrderDesc("id")
+	buf, err := toSQL(stmt)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Println(buf.String())
 	return nil
 }
