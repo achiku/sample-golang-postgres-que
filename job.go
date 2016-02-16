@@ -234,7 +234,7 @@ func FailingJob(j *que.Job) error {
 		log.Println(err)
 		return err
 	}
-	if cnt != 2 {
+	if cnt != 3 {
 		return errors.New("count doesn't match")
 	}
 	log.Printf("[FailingJob] count: %d", cnt)
@@ -255,11 +255,13 @@ func DbrQueryBuilderJob(j *que.Job) error {
 	stmt := dbr.Select("id", "name").
 		From("item").
 		OrderDesc("id")
-	buf, err := toSQL(stmt)
+	sql, err := toSQL(stmt)
+	rows, err := j.Conn().Query(sql.String())
+	log.Println(rows)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	log.Println(buf.String())
+	log.Println(sql.String())
 	return nil
 }
