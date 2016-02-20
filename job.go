@@ -256,12 +256,18 @@ func DbrQueryBuilderJob(j *que.Job) error {
 		From("item").
 		OrderDesc("id")
 	sql, err := toSQL(stmt)
-	rows, err := j.Conn().Query(sql.String())
-	log.Println(rows)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
+	conn := j.Conn()
+	rows, err := conn.Query(sql.String())
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer rows.Close()
+	log.Println(rows)
 	log.Println(sql.String())
 	return nil
 }

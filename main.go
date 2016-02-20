@@ -28,7 +28,7 @@ func main() {
 		"DbrQueryBuilderJob": DbrQueryBuilderJob,
 	}
 	log.Println("create worker pool")
-	workers := que.NewWorkerPool(qc, wm, 1)
+	workers := que.NewWorkerPool(qc, wm, 2)
 	workers.Interval = 2 * time.Second
 	go workers.Start()
 
